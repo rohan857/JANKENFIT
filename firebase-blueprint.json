@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "WellnessState": {
+      "title": "WellnessState",
+      "description": "Complete personal fitness and student wellness state synced across mobile and web for a single authenticated user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Authenticated owner UID matching the parent user document ID."
+        },
+        "activeDateKey": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Active local calendar date key in YYYY-MM-DD format."
+        },
+        "profile": {
+          "type": "object",
+          "description": "User profile containing display name, email, body metrics, and training preferences."
+        },
+        "readiness": {
+          "type": "object",
+          "description": "Daily readiness inputs and computed readiness score."
+        },
+        "vitalsHistory": {
+          "type": "array",
+          "description": "Bounded list (max 50) of recent optical pulse and blood pressure readings."
+        },
+        "nutritionLogs": {
+          "type": "array",
+          "description": "Bounded list (max 100) of logged meals and nutrition entries."
+        },
+        "postureBreaks": {
+          "type": "object",
+          "description": "Desk-posture break counts, streak days, last break timestamp, and bounded break logs."
+        },
+        "workoutSessions": {
+          "type": "array",
+          "description": "Bounded list (max 50) of completed isometric and bodyweight workout sessions."
+        },
+        "dailyHistory": {
+          "type": "array",
+          "description": "Bounded list (max 14) of archived daily wellness summaries."
+        },
+        "tasks": {
+          "type": "array",
+          "description": "Bounded list (max 100) of daily personal checklist tasks."
+        },
+        "wellnessLogs": {
+          "type": "array",
+          "description": "Bounded list (max 60) of breathing, eye-rest, and reflection check-ins."
+        },
+        "dietAdherenceIds": {
+          "type": "array",
+          "description": "Bounded list (max 10) of daily meal template slot IDs marked as followed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the user wellness state document was first created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the most recent cloud sync write."
+        }
+      },
+      "required": [
+        "uid",
+        "activeDateKey",
+        "profile",
+        "readiness",
+        "vitalsHistory",
+        "nutritionLogs",
+        "postureBreaks",
+        "workoutSessions",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/wellness/{docId}": {
+      "schema": {
+        "$ref": "#/entities/WellnessState"
+      },
+      "description": "Private per-user wellness state document (fixed docId 'state') strictly owned and readable/writable only by the authenticated owner."
+    }
+  }
+}

@@ -1,0 +1,188 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened global primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidProfile(profile) {
+      return profile is map
+        && profile.keys().hasAll(['name', 'email', 'updatedAt'])
+        && profile.keys().hasOnly([
+          'name',
+          'email',
+          'age',
+          'heightCm',
+          'weightKg',
+          'activityLevel',
+          'goal',
+          'dietPreference',
+          'preferredCity',
+          'selectedWorkoutType',
+          'deskIntervalMinutes',
+          'updatedAt'
+        ])
+        && profile.name is string && profile.name.size() >= 1 && profile.name.size() <= 100
+        && profile.email is string && profile.email.size() <= 200
+        && profile.updatedAt is string && profile.updatedAt.size() <= 64
+        && (!('age' in profile) || (profile.age is number && profile.age >= 14 && profile.age <= 90))
+        && (!('heightCm' in profile) || (profile.heightCm is number && profile.heightCm >= 100 && profile.heightCm <= 240))
+        && (!('weightKg' in profile) || (profile.weightKg is number && profile.weightKg >= 30 && profile.weightKg <= 220))
+        && (!('activityLevel' in profile) || (profile.activityLevel is string && profile.activityLevel.size() <= 60))
+        && (!('goal' in profile) || (profile.goal is string && profile.goal.size() <= 60))
+        && (!('dietPreference' in profile) || (profile.dietPreference is string && profile.dietPreference.size() <= 30))
+        && (!('preferredCity' in profile) || (profile.preferredCity is string && profile.preferredCity.size() <= 80))
+        && (!('selectedWorkoutType' in profile) || (profile.selectedWorkoutType is string && profile.selectedWorkoutType.size() <= 60))
+        && (!('deskIntervalMinutes' in profile) || (profile.deskIntervalMinutes is number && profile.deskIntervalMinutes >= 15 && profile.deskIntervalMinutes <= 120));
+    }
+
+    function isValidReadiness(readiness) {
+      return readiness is map
+        && readiness.keys().hasAll(['sleepHours', 'fatigueLevel', 'waterGlasses', 'score', 'date'])
+        && readiness.keys().hasOnly([
+          'sleepHours',
+          'sleepQuality',
+          'fatigueLevel',
+          'waterGlasses',
+          'score',
+          'date'
+        ])
+        && readiness.sleepHours is number && readiness.sleepHours >= 0 && readiness.sleepHours <= 24
+        && (!('sleepQuality' in readiness) || (readiness.sleepQuality is string && readiness.sleepQuality.size() <= 30))
+        && readiness.fatigueLevel is number && readiness.fatigueLevel >= 1 && readiness.fatigueLevel <= 5
+        && readiness.waterGlasses is number && readiness.waterGlasses >= 0 && readiness.waterGlasses <= 30
+        && readiness.score is number && readiness.score >= 0 && readiness.score <= 100
+        && readiness.date is string && readiness.date.size() == 10 && readiness.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    function isValidPostureBreaks(postureBreaks) {
+      return postureBreaks is map
+        && postureBreaks.keys().hasAll(['completedToday', 'streakDays', 'lastBreakTimestamp'])
+        && postureBreaks.keys().hasOnly(['completedToday', 'streakDays', 'lastBreakTimestamp', 'logs'])
+        && postureBreaks.completedToday is number && postureBreaks.completedToday >= 0 && postureBreaks.completedToday <= 50
+        && postureBreaks.streakDays is number && postureBreaks.streakDays >= 0 && postureBreaks.streakDays <= 3650
+        && (postureBreaks.lastBreakTimestamp == null || (postureBreaks.lastBreakTimestamp is string && postureBreaks.lastBreakTimestamp.size() <= 64))
+        && (!('logs' in postureBreaks) || (postureBreaks.logs is list && postureBreaks.logs.size() <= 50 && (postureBreaks.logs.size() == 0 || postureBreaks.logs[0] is map)));
+    }
+
+    function isValidBoundedMapList(items, maxLen) {
+      return items is list
+        && items.size() <= maxLen
+        && (items.size() == 0 || items[0] is map);
+    }
+
+    function isValidStringList(items, maxLen) {
+      return items is list
+        && items.size() <= maxLen
+        && (items.size() == 0 || (items[0] is string && items[0].size() <= 64));
+    }
+
+    function isValidWellnessState(data, userId) {
+      return data is map
+        && data.keys().hasAll([
+          'uid',
+          'activeDateKey',
+          'profile',
+          'readiness',
+          'vitalsHistory',
+          'nutritionLogs',
+          'postureBreaks',
+          'workoutSessions',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'activeDateKey',
+          'profile',
+          'readiness',
+          'vitalsHistory',
+          'nutritionLogs',
+          'postureBreaks',
+          'workoutSessions',
+          'dailyHistory',
+          'tasks',
+          'wellnessLogs',
+          'dietAdherenceIds',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidId(data.uid)
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && data.activeDateKey is string && data.activeDateKey.size() == 10 && data.activeDateKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && isValidProfile(data.profile)
+        && isValidReadiness(data.readiness)
+        && isValidBoundedMapList(data.vitalsHistory, 50)
+        && isValidBoundedMapList(data.nutritionLogs, 100)
+        && isValidPostureBreaks(data.postureBreaks)
+        && isValidBoundedMapList(data.workoutSessions, 50)
+        && (!('dailyHistory' in data) || isValidBoundedMapList(data.dailyHistory, 14))
+        && (!('tasks' in data) || isValidBoundedMapList(data.tasks, 100))
+        && (!('wellnessLogs' in data) || isValidBoundedMapList(data.wellnessLogs, 60))
+        && (!('dietAdherenceIds' in data) || isValidStringList(data.dietAdherenceIds, 10));
+    }
+
+    // Strict owner-only private wellness document: /users/{userId}/wellness/state
+    match /users/{userId}/wellness/{docId} {
+      allow get: if isSignedIn() && isValidId(userId) && docId == 'state' && isOwner(userId);
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && isValidId(userId)
+        && docId == 'state'
+        && isOwner(userId)
+        && isValidWellnessState(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isValidId(userId)
+        && docId == 'state'
+        && isOwner(userId)
+        && isValidWellnessState(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'activeDateKey',
+          'profile',
+          'readiness',
+          'vitalsHistory',
+          'nutritionLogs',
+          'postureBreaks',
+          'workoutSessions',
+          'dailyHistory',
+          'tasks',
+          'wellnessLogs',
+          'dietAdherenceIds',
+          'updatedAt'
+        ]);
+
+      allow delete: if isSignedIn() && isValidId(userId) && docId == 'state' && isOwner(userId);
+    }
+  }
+}

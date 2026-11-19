@@ -1,0 +1,6 @@
+{
+  "name": "Cadence — Smart Fitness & Student Wellness",
+  "description": "Offline-first smart fitness, optical PPG vitals, hostel macro rations, desk-posture guard, and calisthenics pacer designed for students across desktop web and Android APK.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
