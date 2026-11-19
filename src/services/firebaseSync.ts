@@ -21,8 +21,6 @@ import {
   getFirestore,
   initializeFirestore,
   onSnapshot,
-  persistentLocalCache,
-  persistentMultipleTabManager,
   serverTimestamp,
   setDoc,
   Unsubscribe,
@@ -138,9 +136,6 @@ if (runtimeConfig) {
       app,
       {
         experimentalForceLongPolling: true,
-        localCache: persistentLocalCache({
-          tabManager: persistentMultipleTabManager(),
-        }),
       },
       runtimeConfig.firestoreDatabaseId
     );
