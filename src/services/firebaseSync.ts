@@ -137,6 +137,7 @@ if (runtimeConfig) {
     db = initializeFirestore(
       app,
       {
+        experimentalForceLongPolling: true,
         localCache: persistentLocalCache({
           tabManager: persistentMultipleTabManager(),
         }),
